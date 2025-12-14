@@ -105,6 +105,18 @@ services:
       retries: 3
       start_period: 15s
 
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "8080:8080"
+    networks:
+      - bff-network
+    depends_on:
+      - mobile-bff
+      - web-bff
+
 networks:
   bff-network:
     driver: bridge
