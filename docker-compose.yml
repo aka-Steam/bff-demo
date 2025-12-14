@@ -68,14 +68,10 @@ services:
       - ORDER_SERVICE_URL=http://order-service:3002
       - PRODUCT_SERVICE_URL=http://product-service:3003
     depends_on:
-      redis:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
-      order-service:
-        condition: service_healthy
-      product-service:
-        condition: service_healthy
+      - redis
+      - user-service
+      - order-service
+      - product-service
     networks:
       - bff-network
     healthcheck:
@@ -96,14 +92,10 @@ services:
       - ORDER_SERVICE_URL=http://order-service:3002
       - PRODUCT_SERVICE_URL=http://product-service:3003
     depends_on:
-      redis:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
-      order-service:
-        condition: service_healthy
-      product-service:
-        condition: service_healthy
+      - redis
+      - user-service
+      - order-service
+      - product-service
     networks:
       - bff-network
     healthcheck:

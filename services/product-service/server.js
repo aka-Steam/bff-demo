@@ -30,6 +30,12 @@ app.get('/products', (req, res) => {
   res.json(filtered);
 });
 
+// GET /products/popular - ДОЛЖЕН быть ПЕРЕД /products/:id
+app.get('/products/popular', (req, res) => {
+  // Возвращаем топ-3 товара
+  res.json(products.slice(0, 3));
+});
+
 // GET /products/:id
 app.get('/products/:id', (req, res) => {
   const product = products.find(p => p.id === parseInt(req.params.id));
@@ -37,12 +43,6 @@ app.get('/products/:id', (req, res) => {
     return res.status(404).json({ error: 'Product not found' });
   }
   res.json(product);
-});
-
-// GET /products/popular
-app.get('/products/popular', (req, res) => {
-  // Возвращаем топ-3 товара
-  res.json(products.slice(0, 3));
 });
 
 // Health check

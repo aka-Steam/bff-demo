@@ -68,11 +68,14 @@ app.get('/api/dashboard/:userId', async (req, res) => {
     const cacheKey = `web:dashboard:${userId}`;
     
     const dashboardData = await getCachedOrFetch(cacheKey, async () => {
-      // Параллельные запросы
+      // Параллельные запросы с обработкой ошибок
       const [user, orders, popularProducts] = await Promise.all([
         axios.get(`${USER_SERVICE}/users/${userId}`),
         axios.get(`${ORDER_SERVICE}/orders?userId=${userId}`),
-        axios.get(`${PRODUCT_SERVICE}/products/popular`)
+        axios.get(`${PRODUCT_SERVICE}/products/popular`).catch(err => {
+          console.warn('[Web BFF] Failed to fetch popular products, using empty array:', err.message);
+          return { data: [] };
+        })
       ]);
       
       // Обогащение: получаем детали товаров для заказов
