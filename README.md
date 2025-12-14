@@ -4,6 +4,51 @@
 
 ## Архитектура
 
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Frontend[Frontend<br/>:8080]
+        MobileClient[📱 Mobile Client]
+        WebClient[🌐 Web Client]
+    end
+
+    subgraph "BFF Layer"
+        MobileBFF[Mobile BFF<br/>:4001]
+        WebBFF[Web BFF<br/>:4002]
+        Redis[(Redis<br/>:6379)]
+    end
+
+    subgraph "Microservices Layer"
+        UserService[User Service<br/>:3001]
+        OrderService[Order Service<br/>:3002]
+        ProductService[Product Service<br/>:3003]
+    end
+
+    Frontend -->|HTTP| MobileBFF
+    Frontend -->|HTTP| WebBFF
+    MobileClient -.->|HTTP| MobileBFF
+    WebClient -.->|HTTP| WebBFF
+
+    MobileBFF -->|Aggregates| UserService
+    MobileBFF -->|Aggregates| OrderService
+    MobileBFF -->|Cache| Redis
+
+    WebBFF -->|Aggregates| UserService
+    WebBFF -->|Aggregates| OrderService
+    WebBFF -->|Aggregates| ProductService
+    WebBFF -->|Cache| Redis
+
+    style Frontend fill:#667eea,stroke:#333,stroke-width:2px,color:#fff
+    style MobileBFF fill:#667eea,stroke:#333,stroke-width:2px,color:#fff
+    style WebBFF fill:#764ba2,stroke:#333,stroke-width:2px,color:#fff
+    style Redis fill:#dc382d,stroke:#333,stroke-width:2px,color:#fff
+    style UserService fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style OrderService fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+    style ProductService fill:#28a745,stroke:#333,stroke-width:2px,color:#fff
+```
+
+### Компоненты системы:
+
 - **3 микросервиса**: User Service, Order Service, Product Service
 - **2 BFF сервиса**: Mobile BFF (порт 4001), Web BFF (порт 4002)
 - **Redis**: Кеширование запросов (порт 6379)
@@ -134,6 +179,47 @@ docker-compose down
 2. **Web BFF** - полные данные с обогащением (детали товаров в заказах, статистика)
 3. **Кеширование** - оба BFF используют Redis для кеширования ответов (TTL: 5 минут)
 4. **Параллельные запросы** - BFF агрегирует данные из нескольких микросервисов параллельно
+
+## Поток данных
+
+```mermaid
+sequenceDiagram
+    participant Client as Клиент
+    participant BFF as BFF (Mobile/Web)
+    participant Redis as Redis Cache
+    participant UserSvc as User Service
+    participant OrderSvc as Order Service
+    participant ProductSvc as Product Service
+
+    Client->>BFF: GET /api/dashboard/:userId
+    
+    BFF->>Redis: Проверка кеша
+    alt Кеш найден
+        Redis-->>BFF: Cache HIT
+        BFF-->>Client: Данные из кеша
+    else Кеш не найден
+        Redis-->>BFF: Cache MISS
+        
+        par Параллельные запросы
+            BFF->>UserSvc: GET /users/:id
+            BFF->>OrderSvc: GET /orders?userId=:id
+            BFF->>ProductSvc: GET /products/popular (только Web BFF)
+        end
+        
+        UserSvc-->>BFF: Данные пользователя
+        OrderSvc-->>BFF: Список заказов
+        ProductSvc-->>BFF: Популярные товары
+        
+        alt Web BFF - обогащение данных
+            BFF->>ProductSvc: GET /products/:id (для каждого товара в заказе)
+            ProductSvc-->>BFF: Детали товаров
+        end
+        
+        BFF->>BFF: Агрегация и форматирование данных
+        BFF->>Redis: Сохранение в кеш (TTL: 5 мин)
+        BFF-->>Client: Агрегированные данные
+    end
+```
 
 ## Тестирование
 
